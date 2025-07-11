@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShieldCheck, TrendingUp, AlertTriangle, Droplet, Weight, PlusCircle, Calendar, ChevronDown, ChevronUp, Zap, Ruler, PersonStanding, Activity, Baby } from 'lucide-react';
+import { ShieldCheck, TrendingUp, AlertTriangle, Droplet, Weight, PlusCircle, Calendar, ChevronDown, ChevronUp, Zap, Ruler, PersonStanding, Activity, Baby, Loader } from 'lucide-react';
 
-// --- DATA (Milk, Fortifier, ESPGHAN, Fenton) ---
+// --- DATA (Milk, Fortifier, ESPGHAN) ---
+// Fenton data is now fetched from the /public folder.
 const milkData = {
   pretermMilkEarly: { name: "Preterm Milk (Early)", energy: 69.5, protein: 1.6, fat: 4.0, carbs: 7.0, linoleicAcid: 700, alphaLinolenicAcid: 85, dha: 12.5, ara: 20, epa: 2.5, sodium: 22.5, potassium: 62.5, chloride: 45, calcium: 30, phosphorus: 14, magnesium: 3.5, iron: 0.065, zinc: 0.45, copper: 40, selenium: 1.75, manganese: 3.5, iodine: 12.5, vitaminA: 225, vitaminD: 2.5, vitaminE: 0.35, vitaminK: 2, vitaminC: 4, thiamine: 17.5, riboflavin: 35, niacin: 0.175, vitaminB6: 15, folicAcid: 7.5, vitaminB12: 0.04, pantothenicAcid: 0.25, biotin: 0.75 },
   pretermMilkMature: { name: "Preterm Milk (Mature)", energy: 69.5, protein: 1.1, fat: 4.0, carbs: 7.0, linoleicAcid: 700, alphaLinolenicAcid: 85, dha: 12.5, ara: 20, epa: 2.5, sodium: 22.5, potassium: 62.5, chloride: 45, calcium: 30, phosphorus: 14, magnesium: 3.5, iron: 0.065, zinc: 0.3, copper: 40, selenium: 1.75, manganese: 3.5, iodine: 12.5, vitaminA: 225, vitaminD: 2.5, vitaminE: 0.35, vitaminK: 2, vitaminC: 4, thiamine: 17.5, riboflavin: 35, niacin: 0.175, vitaminB6: 15, folicAcid: 7.5, vitaminB12: 0.04, pantothenicAcid: 0.25, biotin: 0.75 },
+};
+const formulaData = {
+  none: { name: "None", energy: 0, protein: 0, fat: 0, carbs: 0, linoleicAcid: 0, alphaLinolenicAcid: 0, dha: 0, ara: 0, epa: 0, sodium: 0, potassium: 0, chloride: 0, calcium: 0, phosphorus: 0, magnesium: 0, iron: 0, zinc: 0, copper: 0, selenium: 0, manganese: 0, iodine: 0, vitaminA: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, vitaminC: 0, thiamine: 0, riboflavin: 0, niacin: 0, vitaminB6: 0, folicAcid: 0, vitaminB12: 0, pantothenicAcid: 0, biotin: 0 },
   preNAN: { name: "Nestle PreNAN (Feed)", energy: 80, protein: 2.73, fat: 3.94, carbs: 8.4, linoleicAcid: 535.5, alphaLinolenicAcid: 53.5, ara: 146, dha: 146, sodium: 50.46, potassium: 77.89, chloride: 76.26, calcium: 98.98, phosphorus: 49.49, magnesium: 6.0, iron: 1.44, zinc: 1.1, copper: 73, manganese: 0.81, selenium: 3.89, iodine: 12.17, vitaminA: 292, vitaminD: 153, vitaminE: 1.2, vitaminK: 13.79, vitaminC: 14.6, thiamine: 104, riboflavin: 146, niacin: 1.38, vitaminB6: 75, folicAcid: 30.83, vitaminB12: 0.187, pantothenicAcid: 0.45, biotin: 2.03 },
   aptamilPreterm: { name: "Aptamil Preterm (Feed)", energy: 80, protein: 2.6, fat: 4.4, carbs: 7.3, linoleicAcid: 567, alphaLinolenicAcid: 95, ara: 26.7, dha: 154, sodium: 66.4, potassium: 66.4, chloride: 87.9, calcium: 102, phosphorus: 51, magnesium: 6.4, iron: 1.62, zinc: 1.02, copper: 82.6, manganese: 8.2, selenium: 4.37, iodine: 16.2, vitaminA: 345.7, vitaminD: 108.5, vitaminE: 2.14, vitaminK: 20.3, vitaminC: 21.8, thiamine: 165.8, riboflavin: 213.3, niacin: 3.4, vitaminB6: 121.5, folicAcid: 377.5, vitaminB12: 0.34, pantothenicAcid: 1.0, biotin: 4.3, epa: 39.4 },
   neosure: { name: "Similac Neosure (Feed)", energy: 74, protein: 2.41, fat: 3.46, carbs: 8.29, linoleicAcid: 454.8, alphaLinolenicAcid: 53.38, ara: 16.22, dha: 10.15, sodium: 51.7, potassium: 93.4, chloride: 77.9, calcium: 101.1, phosphorus: 53.06, magnesium: 6.53, iron: 1.47, zinc: 1.07, copper: 74.7, manganese: 0.77, selenium: 3.68, iodine: 15.16, vitaminA: 951, vitaminD: 90.6, vitaminE: 2.8, vitaminK: 14.5, vitaminC: 18.2, thiamine: 104, riboflavin: 148, niacin: 1.74, vitaminB6: 78.5, folicAcid: 28.8, vitaminB12: 0.26, pantothenicAcid: 0.54, biotin: 5.9 },
@@ -19,51 +23,70 @@ const fortifierData = {
 const esphganGuidelines = {
   fluid: { label: "Fluid", unit: "ml/kg/day", min: 150, max: 180 }, energy: { label: "Energy", unit: "kcal/kg/day", min: 115, max: 140 }, protein: { label: "Protein", unit: "g/kg/day", min: 3.5, max: 4.0 }, fat: { label: "Fat", unit: "g/kg/day", min: 4.8, max: 8.1 }, carbs: { label: "Carbohydrates", unit: "g/kg/day", min: 11, max: 15 }, linoleicAcid: { label: "Linoleic Acid", unit: "mg/kg/day", min: 385, max: 1540 }, alphaLinolenicAcid: { label: "α-Linolenic Acid", unit: "mg/kg/day", min: 55, max: Infinity }, dha: { label: "DHA", unit: "mg/kg/day", min: 30, max: 65 }, ara: { label: "ARA", unit: "mg/kg/day", min: 30, max: 100 }, epa: { label: "EPA", unit: "mg/kg/day", min: 0, max: 20 }, sodium: { label: "Sodium", unit: "mg/kg/day", min: 69, max: 115 }, potassium: { label: "Potassium", unit: "mg/kg/day", min: 90, max: 180 }, chloride: { label: "Chloride", unit: "mg/kg/day", min: 106, max: 177 }, calcium: { label: "Calcium", unit: "mg/kg/day", min: 120, max: 200 }, phosphorus: { label: "Phosphorus", unit: "mg/kg/day", min: 68, max: 115 }, magnesium: { label: "Magnesium", unit: "mg/kg/day", min: 9.7, max: 12.1 }, iron: { label: "Iron", unit: "mg/kg/day", min: 2, max: 3 }, zinc: { label: "Zinc", unit: "mg/kg/day", min: 2, max: 3 }, copper: { label: "Copper", unit: "µg/kg/day", min: 120, max: 230 }, selenium: { label: "Selenium", unit: "µg/kg/day", min: 7, max: 10 }, manganese: { label: "Manganese", unit: "µg/kg/day", min: 1, max: 15 }, iodine: { label: "Iodine", unit: "µg/kg/day", min: 11, max: 55 }, vitaminA: { label: "Vitamin A", unit: "IU/kg/day", min: 1333, max: 3300 }, vitaminD: { label: "Vitamin D", unit: "IU/kg/day", min: 400, max: 700 }, vitaminE: { label: "Vitamin E", unit: "mg/kg/day", min: 2.2, max: 11 }, vitaminK: { label: "Vitamin K", unit: "µg/kg/day", min: 4.4, max: 28 }, vitaminC: { label: "Vitamin C", unit: "mg/kg/day", min: 17, max: 43 }, thiamine: { label: "Thiamine (B1)", unit: "µg/kg/day", min: 140, max: 290 }, riboflavin: { label: "Riboflavin (B2)", unit: "µg/kg/day", min: 200, max: 430 }, niacin: { label: "Niacin", unit: "mg/kg/day", min: 1.1, max: 5.7 }, vitaminB6: { label: "Vitamin B6", unit: "µg/kg/day", min: 70, max: 290 }, folicAcid: { label: "Folic Acid", unit: "µg/kg/day", min: 23, max: 100 }, vitaminB12: { label: "Vitamin B12", unit: "µg/kg/day", min: 0.1, max: 0.6 }, pantothenicAcid: { label: "Pantothenic Acid", unit: "mg/kg/day", min: 0.6, max: 2.2 }, biotin: { label: "Biotin", unit: "µg/kg/day", min: 3.5, max: 15 },
 };
-const fenton_data = {
-    "male": { "weight": [ { "week": 22, "L": -1.334, "M": 519.8, "S": 0.1248 }, { "week": 23, "L": -1.13, "M": 600.3, "S": 0.1264 }, { "week": 24, "L": -0.93, "M": 690.6, "S": 0.128 }, { "week": 25, "L": -0.74, "M": 791.5, "S": 0.1296 }, { "week": 26, "L": -0.55, "M": 903.8, "S": 0.1312 }, { "week": 27, "L": -0.37, "M": 1028.3, "S": 0.1328 }, { "week": 28, "L": -0.19, "M": 1165.8, "S": 0.1344 }, { "week": 29, "L": -0.01, "M": 1317.2, "S": 0.136 }, { "week": 30, "L": 0.16, "M": 1483.2, "S": 0.1376 }, { "week": 31, "L": 0.33, "M": 1664.6, "S": 0.1392 }, { "week": 32, "L": 0.49, "M": 1862.2, "S": 0.1408 }, { "week": 33, "L": 0.64, "M": 2076.8, "S": 0.1424 }, { "week": 34, "L": 0.78, "M": 2309.2, "S": 0.144 }, { "week": 35, "L": 0.91, "M": 2559.8, "S": 0.1456 }, { "week": 36, "L": 1.03, "M": 2829.2, "S": 0.1472 }, { "week": 37, "L": 1.13, "M": 3117.8, "S": 0.1488 }, { "week": 38, "L": 1.22, "M": 3425.8, "S": 0.1504 }, { "week": 39, "L": 1.29, "M": 3753.6, "S": 0.152 }, { "week": 40, "L": 1.34, "M": 4101.4, "S": 0.1536 }, { "week": 41, "L": 1.37, "M": 4469.4, "S": 0.1552 }, { "week": 42, "L": 1.38, "M": 4857.6, "S": 0.1568 }, { "week": 43, "L": 1.37, "M": 5266, "S": 0.1584 }, { "week": 44, "L": 1.34, "M": 5694.4, "S": 0.16 }, { "week": 45, "L": 1.29, "M": 6142.6, "S": 0.1616 }, { "week": 46, "L": 1.23, "M": 6610.4, "S": 0.1632 }, { "week": 47, "L": 1.15, "M": 7097.4, "S": 0.1648 }, { "week": 48, "L": 1.06, "M": 7603.4, "S": 0.1664 }, { "week": 49, "L": 0.95, "M": 8127.8, "S": 0.168 }, { "week": 50, "L": 0.83, "M": 8670.2, "S": 0.1696 } ], "length": [ { "week": 22, "L": 0.99, "M": 28.1, "S": 0.051 }, { "week": 23, "L": 1, "M": 29.3, "S": 0.051 }, { "week": 24, "L": 1.01, "M": 30.5, "S": 0.051 }, { "week": 25, "L": 1.02, "M": 31.7, "S": 0.051 }, { "week": 26, "L": 1.03, "M": 32.9, "S": 0.051 }, { "week": 27, "L": 1.04, "M": 34.1, "S": 0.051 }, { "week": 28, "L": 1.05, "M": 35.3, "S": 0.051 }, { "week": 29, "L": 1.06, "M": 36.5, "S": 0.051 }, { "week": 30, "L": 1.07, "M": 37.7, "S": 0.051 }, { "week": 31, "L": 1.08, "M": 38.9, "S": 0.051 }, { "week": 32, "L": 1.09, "M": 40.1, "S": 0.051 }, { "week": 33, "L": 1.1, "M": 41.3, "S": 0.051 }, { "week": 34, "L": 1.11, "M": 42.5, "S": 0.051 }, { "week": 35, "L": 1.12, "M": 43.7, "S": 0.051 }, { "week": 36, "L": 1.13, "M": 44.9, "S": 0.051 }, { "week": 37, "L": 1.14, "M": 46.1, "S": 0.051 }, { "week": 38, "L": 1.15, "M": 47.3, "S": 0.051 }, { "week": 39, "L": 1.16, "M": 48.5, "S": 0.051 }, { "week": 40, "L": 1.17, "M": 49.7, "S": 0.051 }, { "week": 41, "L": 1.18, "M": 50.9, "S": 0.051 }, { "week": 42, "L": 1.19, "M": 52.1, "S": 0.051 }, { "week": 43, "L": 1.2, "M": 53.3, "S": 0.051 }, { "week": 44, "L": 1.21, "M": 54.5, "S": 0.051 }, { "week": 45, "L": 1.22, "M": 55.7, "S": 0.051 }, { "week": 46, "L": 1.23, "M": 56.9, "S": 0.051 }, { "week": 47, "L": 1.24, "M": 58.1, "S": 0.051 }, { "week": 48, "L": 1.25, "M": 59.3, "S": 0.051 }, { "week": 49, "L": 1.26, "M": 60.5, "S": 0.051 }, { "week": 50, "L": 1.27, "M": 61.7, "S": 0.051 } ], "hc": [ { "week": 22, "L": 1.23, "M": 20.1, "S": 0.05 }, { "week": 23, "L": 1.23, "M": 21.1, "S": 0.05 }, { "week": 24, "L": 1.23, "M": 22.1, "S": 0.05 }, { "week": 25, "L": 1.23, "M": 23.1, "S": 0.05 }, { "week": 26, "L": 1.23, "M": 24.1, "S": 0.05 }, { "week": 27, "L": 1.23, "M": 25.1, "S": 0.05 }, { "week": 28, "L": 1.23, "M": 26.1, "S": 0.05 }, { "week": 29, "L": 1.23, "M": 27.1, "S": 0.05 }, { "week": 30, "L": 1.23, "M": 28.1, "S": 0.05 }, { "week": 31, "L": 1.23, "M": 29.1, "S": 0.05 }, { "week": 32, "L": 1.23, "M": 30.1, "S": 0.05 }, { "week": 33, "L": 1.23, "M": 31.1, "S": 0.05 }, { "week": 34, "L": 1.23, "M": 32.1, "S": 0.05 }, { "week": 35, "L": 1.23, "M": 33.1, "S": 0.05 }, { "week": 36, "L": 1.23, "M": 34.1, "S": 0.05 }, { "week": 37, "L": 1.23, "M": 35.1, "S": 0.05 }, { "week": 38, "L": 1.23, "M": 36.1, "S": 0.05 }, { "week": 39, "L": 1.23, "M": 37.1, "S": 0.05 }, { "week": 40, "L": 1.23, "M": 38.1, "S": 0.05 }, { "week": 41, "L": 1.23, "M": 39.1, "S": 0.05 }, { "week": 42, "L": 1.23, "M": 40.1, "S": 0.05 }, { "week": 43, "L": 1.23, "M": 41.1, "S": 0.05 }, { "week": 44, "L": 1.23, "M": 42.1, "S": 0.05 }, { "week": 45, "L": 1.23, "M": 43.1, "S": 0.05 }, { "week": 46, "L": 1.23, "M": 44.1, "S": 0.05 }, { "week": 47, "L": 1.23, "M": 45.1, "S": 0.05 }, { "week": 48, "L": 1.23, "M": 46.1, "S": 0.05 }, { "week": 49, "L": 1.23, "M": 47.1, "S": 0.05 }, { "week": 50, "L": 1.23, "M": 48.1, "S": 0.05 } ] },
-    "female": { "weight": [ { "week": 22, "L": -1.334, "M": 488.2, "S": 0.1248 }, { "week": 23, "L": -1.13, "M": 564.8, "S": 0.1264 }, { "week": 24, "L": -0.93, "M": 650.4, "S": 0.128 }, { "week": 25, "L": -0.74, "M": 745.8, "S": 0.1296 }, { "week": 26, "L": -0.55, "M": 851.8, "S": 0.1312 }, { "week": 27, "L": -0.37, "M": 969.2, "S": 0.1328 }, { "week": 28, "L": -0.19, "M": 1098.8, "S": 0.1344 }, { "week": 29, "L": -0.01, "M": 1241.4, "S": 0.136 }, { "week": 30, "L": 0.16, "M": 1397.8, "S": 0.1376 }, { "week": 31, "L": 0.33, "M": 1568.8, "S": 0.1392 }, { "week": 32, "L": 0.49, "M": 1755.2, "S": 0.1408 }, { "week": 33, "L": 0.64, "M": 1957.8, "S": 0.1424 }, { "week": 34, "L": 0.78, "M": 2177.4, "S": 0.144 }, { "week": 35, "L": 0.91, "M": 2414.6, "S": 0.1456 }, { "week": 36, "L": 1.03, "M": 2669.8, "S": 0.1472 }, { "week": 37, "L": 1.13, "M": 2943.6, "S": 0.1488 }, { "week": 38, "L": 1.22, "M": 3236.4, "S": 0.1504 }, { "week": 39, "L": 1.29, "M": 3548.6, "S": 0.152 }, { "week": 40, "L": 1.34, "M": 3880.4, "S": 0.1536 }, { "week": 41, "L": 1.37, "M": 4232.2, "S": 0.1552 }, { "week": 42, "L": 1.38, "M": 4604, "S": 0.1568 }, { "week": 43, "L": 1.37, "M": 4995.8, "S": 0.1584 }, { "week": 44, "L": 1.34, "M": 5407.4, "S": 0.16 }, { "week": 45, "L": 1.29, "M": 5838.6, "S": 0.1616 }, { "week": 46, "L": 1.23, "M": 6289.2, "S": 0.1632 }, { "week": 47, "L": 1.15, "M": 6758.8, "S": 0.1648 }, { "week": 48, "L": 1.06, "M": 7247.2, "S": 0.1664 }, { "week": 49, "L": 0.95, "M": 7753.8, "S": 0.168 }, { "week": 50, "L": 0.83, "M": 8278.2, "S": 0.1696 } ], "length": [ { "week": 22, "L": 0.99, "M": 27.5, "S": 0.051 }, { "week": 23, "L": 1, "M": 28.7, "S": 0.051 }, { "week": 24, "L": 1.01, "M": 29.9, "S": 0.051 }, { "week": 25, "L": 1.02, "M": 31.1, "S": 0.051 }, { "week": 26, "L": 1.03, "M": 32.3, "S": 0.051 }, { "week": 27, "L": 1.04, "M": 33.5, "S": 0.051 }, { "week": 28, "L": 1.05, "M": 34.7, "S": 0.051 }, { "week": 29, "L": 1.06, "M": 35.9, "S": 0.051 }, { "week": 30, "L": 1.07, "M": 37.1, "S": 0.051 }, { "week": 31, "L": 1.08, "M": 38.3, "S": 0.051 }, { "week": 32, "L": 1.09, "M": 39.5, "S": 0.051 }, { "week": 33, "L": 1.1, "M": 40.7, "S": 0.051 }, { "week": 34, "L": 1.11, "M": 41.9, "S": 0.051 }, { "week": 35, "L": 1.12, "M": 43.1, "S": 0.051 }, { "week": 36, "L": 1.13, "M": 44.3, "S": 0.051 }, { "week": 37, "L": 1.14, "M": 45.5, "S": 0.051 }, { "week": 38, "L": 1.15, "M": 46.7, "S": 0.051 }, { "week": 39, "L": 1.16, "M": 47.9, "S": 0.051 }, { "week": 40, "L": 1.17, "M": 49.1, "S": 0.051 }, { "week": 41, "L": 1.18, "M": 50.3, "S": 0.051 }, { "week": 42, "L": 1.19, "M": 51.5, "S": 0.051 }, { "week": 43, "L": 1.2, "M": 52.7, "S": 0.051 }, { "week": 44, "L": 1.21, "M": 53.9, "S": 0.051 }, { "week": 45, "L": 1.22, "M": 55.1, "S": 0.051 }, { "week": 46, "L": 1.23, "M": 56.3, "S": 0.051 }, { "week": 47, "L": 1.24, "M": 57.5, "S": 0.051 }, { "week": 48, "L": 1.25, "M": 58.7, "S": 0.051 }, { "week": 49, "L": 1.26, "M": 59.9, "S": 0.051 }, { "week": 50, "L": 1.27, "M": 61.1, "S": 0.051 } ], "hc": [ { "week": 22, "L": 1.23, "M": 19.5, "S": 0.05 }, { "week": 23, "L": 1.23, "M": 20.5, "S": 0.05 }, { "week": 24, "L": 1.23, "M": 21.5, "S": 0.05 }, { "week": 25, "L": 1.23, "M": 22.5, "S": 0.05 }, { "week": 26, "L": 1.23, "M": 23.5, "S": 0.05 }, { "week": 27, "L": 1.23, "M": 24.5, "S": 0.05 }, { "week": 28, "L": 1.23, "M": 25.5, "S": 0.05 }, { "week": 29, "L": 1.23, "M": 26.5, "S": 0.05 }, { "week": 30, "L": 1.23, "M": 27.5, "S": 0.05 }, { "week": 31, "L": 1.23, "M": 28.5, "S": 0.05 }, { "week": 32, "L": 1.23, "M": 29.5, "S": 0.05 }, { "week": 33, "L": 1.23, "M": 30.5, "S": 0.05 }, { "week": 34, "L": 1.23, "M": 31.5, "S": 0.05 }, { "week": 35, "L": 1.23, "M": 32.5, "S": 0.05 }, { "week": 36, "L": 1.23, "M": 33.5, "S": 0.05 }, { "week": 37, "L": 1.23, "M": 34.5, "S": 0.05 }, { "week": 38, "L": 1.23, "M": 35.5, "S": 0.05 }, { "week": 39, "L": 1.23, "M": 36.5, "S": 0.05 }, { "week": 40, "L": 1.23, "M": 37.5, "S": 0.05 }, { "week": 41, "L": 1.23, "M": 38.5, "S": 0.05 }, { "week": 42, "L": 1.23, "M": 39.5, "S": 0.05 }, { "week": 43, "L": 1.23, "M": 40.5, "S": 0.05 }, { "week": 44, "L": 1.23, "M": 41.5, "S": 0.05 }, { "week": 45, "L": 1.23, "M": 42.5, "S": 0.05 }, { "week": 46, "L": 1.23, "M": 43.5, "S": 0.05 }, { "week": 47, "L": 1.23, "M": 44.5, "S": 0.05 }, { "week": 48, "L": 1.23, "M": 45.5, "S": 0.05 }, { "week": 49, "L": 1.23, "M": 46.5, "S": 0.05 }, { "week": 50, "L": 1.23, "M": 47.5, "S": 0.05 } ] }
-};
-
 const guidelineCategories = {
   "Nutrition": ['fluid', 'energy', 'protein', 'fat', 'carbs', 'linoleicAcid', 'alphaLinolenicAcid', 'dha', 'ara', 'epa'],
   "Minerals": ['sodium', 'potassium', 'chloride', 'calcium', 'phosphorus', 'magnesium', 'iron', 'zinc', 'copper', 'selenium', 'manganese', 'iodine'],
   "Vitamins": ['vitaminA', 'vitaminD', 'vitaminE', 'vitaminK', 'vitaminC', 'thiamine', 'riboflavin', 'niacin', 'vitaminB6', 'folicAcid', 'vitaminB12', 'pantothenicAcid', 'biotin']
 };
+const velocityTargets = {
+    "22-27": { "male": { "p3": 21.3, "p50": 20.8, "p97": 20.8 }, "female": { "p3": 20.6, "p50": 21.2, "p97": 21.0 } },
+    "28-31": { "male": { "p3": 17.1, "p50": 15.9, "p97": 17.1 }, "female": { "p3": 16.8, "p50": 16.6, "p97": 17.6 } },
+    "32-36": { "male": { "p3": 13.5, "p50": 13.2, "p97": 12.4 }, "female": { "p3": 13.7, "p50": 13.3, "p97": 12.9 } },
+    "37-40": { "male": { "p3": 9.5, "p50": 9.1, "p97": 8.7 }, "female": { "p3": 9.0, "p50": 8.7, "p97": 8.9 } },
+    "41-44": { "male": { "p3": 7.5, "p50": 7.3, "p97": 7.0 }, "female": { "p3": 7.0, "p50": 6.5, "p97": 5.9 } },
+    "45-49": { "male": { "p3": 6.1, "p50": 6.0, "p97": 5.9 }, "female": { "p3": 5.6, "p50": 5.4, "p97": 5.2 } },
+};
 
 // --- Z-Score Calculation Logic ---
-const getLMS = (sex, measurement, gestWeek) => {
-    const chart = fenton_data[sex]?.[measurement];
-    if (!chart) return null;
-    const exactWeekData = chart.find(d => d.week === gestWeek);
-    if (exactWeekData) return { L: exactWeekData.L, M: exactWeekData.M, S: exactWeekData.S };
+const getLMS = (sex, measurement, gestWeek, fentonData) => {
+    if (!fentonData) return null;
+    const genderKey = sex === 'male' ? 'm' : 'f';
+    const chart = fentonData.filter(row => row.gender === genderKey && row.measure === measurement);
+    if (chart.length === 0) return null;
+
+    const exactWeekData = chart.find(d => parseFloat(d.age) === gestWeek);
+    if (exactWeekData) return { L: parseFloat(exactWeekData.l), M: parseFloat(exactWeekData.m), S: parseFloat(exactWeekData.s) };
+    
     if (gestWeek < 22 || gestWeek > 50) return null;
-    const week1 = Math.floor(gestWeek);
-    const week2 = week1 + 1;
-    const data1 = chart.find(d => d.week === week1);
-    const data2 = chart.find(d => d.week === week2);
-    if (!data1 || !data2) return null;
-    const fraction = gestWeek - week1;
-    const L = data1.L + (data2.L - data1.L) * fraction;
-    const M = data1.M + (data2.M - data1.M) * fraction;
-    const S = data1.S + (data2.S - data1.S) * fraction;
+
+    let week1Data = null;
+    let week2Data = null;
+
+    for(let i = chart.length - 1; i >= 0; i--) {
+        if(parseFloat(chart[i].age) <= gestWeek) {
+            week1Data = chart[i];
+            week2Data = chart[i+1];
+            break;
+        }
+    }
+
+    if (!week1Data || !week2Data) return null;
+
+    const fraction = (gestWeek - parseFloat(week1Data.age)) / (parseFloat(week2Data.age) - parseFloat(week1Data.age));
+    const L = parseFloat(week1Data.l) + (parseFloat(week2Data.l) - parseFloat(week1Data.l)) * fraction;
+    const M = parseFloat(week1Data.m) + (parseFloat(week2Data.m) - parseFloat(week1Data.m)) * fraction;
+    const S = parseFloat(week1Data.s) + (parseFloat(week2Data.s) - parseFloat(week1Data.s)) * fraction;
+    
     return { L, M, S };
 };
 
-const calculateZScore = (sex, measurement, gestWeek, value) => {
-    if (!value || value <= 0 || !sex || !gestWeek) return null;
-    const lms = getLMS(sex, measurement, gestWeek);
+const calculateZScore = (sex, measurement, gestWeek, value, fentonData) => {
+    if (!value || value <= 0 || !sex || !gestWeek || !fentonData) return null;
+    const lms = getLMS(sex, measurement, gestWeek, fentonData);
     if (!lms) return null;
     const { L, M, S } = lms;
-    const z = (Math.pow((value / M), L) - 1) / (L * S);
-    return z;
+    if (L === 0) {
+        return Math.log(value / M) / S;
+    }
+    return (Math.pow((value / M), L) - 1) / (L * S);
 };
 
 // --- HELPER & UI COMPONENTS ---
-const InputField = ({ label, value, onChange, unit, icon, placeholder }) => (
+const InputField = ({ label, value, onChange, unit, icon, placeholder, min, max }) => (
   <div className="w-full">
     <label className="text-sm font-medium text-gray-600 flex items-center mb-1">{icon}<span className="ml-2">{label}</span></label>
     <div className="relative">
-      <input type="number" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full p-3 pl-4 pr-12 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
+      <input type="number" value={value} min={min} max={max} onChange={onChange} placeholder={placeholder} className="w-full p-3 pl-4 pr-12 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
       {unit && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">{unit}</span>}
     </div>
   </div>
@@ -72,7 +95,7 @@ const InputField = ({ label, value, onChange, unit, icon, placeholder }) => (
 const Selector = ({ label, value, onChange, options, icon }) => (
   <div>
     <label className="text-sm font-medium text-gray-600 flex items-center mb-1">{icon}<span className="ml-2">{label}</span></label>
-    <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+    <select value={value} onChange={onChange} className="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
       {Object.keys(options).map(key => (<option key={key} value={key}>{options[key].name || key}</option>))}
     </select>
   </div>
@@ -94,40 +117,53 @@ const Accordion = ({ title, children, defaultOpen = true }) => {
 // --- VIEW COMPONENTS ---
 
 const PatientDataView = ({ patientData, setPatientData }) => {
-    const { sex, gestationalAgeAtBirth, currentMeasurements, previousMeasurements } = patientData;
-    const { setSex, setGestationalAgeAtBirth, setCurrentMeasurements, setPreviousMeasurements } = setPatientData;
+    const { sex, gestationalAgeWeeks, gestationalAgeDays, currentMeasurements, previousMeasurements } = patientData;
+    const { setSex, setGestationalAgeWeeks, setGestationalAgeDays, setCurrentMeasurements, setPreviousMeasurements } = setPatientData;
+    
+    const handleDaysChange = (value) => {
+        const num = parseInt(value, 10);
+        if (value === "" || (num >= 0 && num <= 6)) {
+            setGestationalAgeDays(value);
+        }
+    };
 
     return (
         <div className="space-y-8">
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 h-fit space-y-6">
                 <h2 className="text-2xl font-bold text-gray-700">Baby's Details</h2>
                 <Selector label="Sex" value={sex} onChange={(e) => setSex(e.target.value)} options={{'female': {name: 'Female'}, 'male': {name: 'Male'}}} icon={<PersonStanding className="w-4 h-4 text-blue-500" />} />
-                <InputField label="Gestational Age at Birth" value={gestationalAgeAtBirth} onChange={(val) => setGestationalAgeAtBirth(val)} unit="weeks" icon={<Calendar className="w-4 h-4 text-blue-500" />} placeholder="e.g., 32" />
+                <div>
+                    <label className="text-sm font-medium text-gray-600 flex items-center mb-1"><Calendar className="w-4 h-4 text-blue-500" /><span className="ml-2">Gestational Age at Birth</span></label>
+                    <div className="flex gap-4">
+                        <InputField label="Weeks" value={gestationalAgeWeeks} onChange={(e) => setGestationalAgeWeeks(e.target.value)} unit="weeks" icon={<span/>} />
+                        <InputField label="Days" value={gestationalAgeDays} onChange={(e) => handleDaysChange(e.target.value)} unit="days" icon={<span/>} min="0" max="6" />
+                    </div>
+                </div>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 h-fit space-y-6">
                 <h2 className="text-2xl font-bold text-gray-700">Current Measurements</h2>
-                <InputField label="Postnatal Age" value={currentMeasurements.age} onChange={value => setCurrentMeasurements({...currentMeasurements, age: value})} unit="days" icon={<Calendar className="w-4 h-4 text-gray-500" />} />
-                <InputField label="Weight" value={currentMeasurements.weight} onChange={value => setCurrentMeasurements({...currentMeasurements, weight: value})} unit="grams" icon={<Weight className="w-4 h-4 text-gray-500" />} />
-                <InputField label="Length" value={currentMeasurements.length} onChange={value => setCurrentMeasurements({...currentMeasurements, length: value})} unit="cm" icon={<Ruler className="w-4 h-4 text-gray-500" />} />
-                <InputField label="Head Circumference" value={currentMeasurements.hc} onChange={value => setCurrentMeasurements({...currentMeasurements, hc: value})} unit="cm" icon={<Ruler className="w-4 h-4 text-gray-500" />} />
+                <InputField label="Postnatal Age" value={currentMeasurements.age} onChange={(e) => setCurrentMeasurements({...currentMeasurements, age: e.target.value})} unit="days" icon={<Calendar className="w-4 h-4 text-gray-500" />} />
+                <InputField label="Weight" value={currentMeasurements.weight} onChange={(e) => setCurrentMeasurements({...currentMeasurements, weight: e.target.value})} unit="grams" icon={<Weight className="w-4 h-4 text-gray-500" />} />
+                <InputField label="Length" value={currentMeasurements.length} onChange={(e) => setCurrentMeasurements({...currentMeasurements, length: e.target.value})} unit="cm" icon={<Ruler className="w-4 h-4 text-gray-500" />} />
+                <InputField label="Head Circumference" value={currentMeasurements.hc} onChange={(e) => setCurrentMeasurements({...currentMeasurements, hc: e.target.value})} unit="cm" icon={<Ruler className="w-4 h-4 text-gray-500" />} />
             </div>
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 h-fit space-y-6">
                 <h2 className="text-2xl font-bold text-gray-700">Previous Measurements</h2>
-                <InputField label="Postnatal Age" value={previousMeasurements.age} onChange={value => setPreviousMeasurements({...previousMeasurements, age: value})} unit="days" icon={<Calendar className="w-4 h-4 text-gray-500" />} />
-                <InputField label="Weight" value={previousMeasurements.weight} onChange={value => setPreviousMeasurements({...previousMeasurements, weight: value})} unit="grams" icon={<Weight className="w-4 h-4 text-gray-500" />} />
-                <InputField label="Length" value={previousMeasurements.length} onChange={value => setPreviousMeasurements({...previousMeasurements, length: value})} unit="cm" icon={<Ruler className="w-4 h-4 text-gray-500" />} />
-                <InputField label="Head Circumference" value={previousMeasurements.hc} onChange={value => setPreviousMeasurements({...previousMeasurements, hc: value})} unit="cm" icon={<Ruler className="w-4 h-4 text-gray-500" />} />
+                <InputField label="Postnatal Age" value={previousMeasurements.age} onChange={(e) => setPreviousMeasurements({...previousMeasurements, age: e.target.value})} unit="days" icon={<Calendar className="w-4 h-4 text-gray-500" />} />
+                <InputField label="Weight" value={previousMeasurements.weight} onChange={(e) => setPreviousMeasurements({...previousMeasurements, weight: e.target.value})} unit="grams" icon={<Weight className="w-4 h-4 text-gray-500" />} />
+                <InputField label="Length" value={previousMeasurements.length} onChange={(e) => setPreviousMeasurements({...previousMeasurements, length: e.target.value})} unit="cm" icon={<Ruler className="w-4 h-4 text-gray-500" />} />
+                <InputField label="Head Circumference" value={previousMeasurements.hc} onChange={(e) => setPreviousMeasurements({...previousMeasurements, hc: e.target.value})} unit="cm" icon={<Ruler className="w-4 h-4 text-gray-500" />} />
             </div>
         </div>
     );
 };
 
-const GrowthView = ({ zScoreResults, weightVelocity }) => (
+const GrowthView = ({ zScoreResults, weightVelocity, targetVelocity }) => (
     <div className="space-y-8">
-        {weightVelocity ? (<VelocityCard value={weightVelocity} />) : (<div className="text-center py-10 bg-white rounded-lg shadow-sm border"><p className="text-gray-500">Enter valid measurements for velocity.</p></div>)}
+        {weightVelocity ? (<VelocityCard value={weightVelocity} targets={targetVelocity} />) : (<div className="text-center py-10 bg-white rounded-lg shadow-sm border"><p className="text-gray-500">Enter valid measurements for velocity.</p></div>)}
         {zScoreResults ? (
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 h-fit space-y-4">
-                <h2 className="text-2xl font-bold text-gray-700">Anthropometry & Z-Scores</h2>
+                <h2 className="text-2xl font-bold text-gray-700">Anthropometry & Z-Scores (Fenton 2025)</h2>
                 <ZScoreResultCard title="Weight Z-Score" {...zScoreResults.weight} />
                 <ZScoreResultCard title="Length Z-Score" {...zScoreResults.length} />
                 <ZScoreResultCard title="Head Circ. Z-Score" {...zScoreResults.hc} />
@@ -137,17 +173,31 @@ const GrowthView = ({ zScoreResults, weightVelocity }) => (
 );
 
 const NutritionView = ({ nutritionData, setNutritionData, nutritionResults }) => {
-    const { feedVolume, fortifierGrams, selectedMilk, selectedFortifier } = nutritionData;
-    const { setFeedVolume, setFortifierGrams, setSelectedMilk, setSelectedFortifier } = setNutritionData;
+    const { breastMilkVolume, selectedBreastMilk, formulaVolume, selectedFormula, fortifierGrams, selectedFortifier } = nutritionData;
+    const { setBreastMilkVolume, setSelectedBreastMilk, setFormulaVolume, setSelectedFormula, setFortifierGrams, setSelectedFortifier } = setNutritionData;
 
     return (
         <div className="space-y-8">
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 h-fit space-y-6">
                 <h2 className="text-2xl font-bold text-gray-700">Enteral Nutrition Details</h2>
-                <Selector label="Base Milk / Formula" value={selectedMilk} onChange={(e) => setSelectedMilk(e.target.value)} options={milkData} icon={<Droplet className="w-4 h-4 text-blue-500" />} />
-                <InputField label="Total Feed Volume" value={feedVolume} onChange={setFeedVolume} unit="ml/day" icon={<Droplet className="w-4 h-4 text-blue-500" />} />
-                <Selector label="Fortifier Type" value={selectedFortifier} onChange={(e) => setSelectedFortifier(e.target.value)} options={fortifierData} icon={<Zap className="w-4 h-4 text-orange-500" />} />
-                <InputField label="Fortifier Amount" value={fortifierGrams} onChange={setFortifierGrams} unit="grams/day" icon={<PlusCircle className="w-4 h-4 text-orange-500" />} />
+                
+                <div className="pt-4 border-t">
+                    <h3 className="text-lg font-semibold my-3 text-gray-600">Breast Milk</h3>
+                    <Selector label="Type" value={selectedBreastMilk} onChange={(e) => setSelectedBreastMilk(e.target.value)} options={milkData} icon={<Droplet className="w-4 h-4 text-pink-500" />} />
+                    <InputField label="Volume" value={breastMilkVolume} onChange={(e) => setBreastMilkVolume(e.target.value)} unit="ml/day" icon={<Droplet className="w-4 h-4 text-pink-500" />} />
+                </div>
+
+                <div className="pt-4 border-t">
+                    <h3 className="text-lg font-semibold my-3 text-gray-600">Formula</h3>
+                    <Selector label="Type" value={selectedFormula} onChange={(e) => setSelectedFormula(e.target.value)} options={formulaData} icon={<Droplet className="w-4 h-4 text-blue-500" />} />
+                    <InputField label="Volume" value={formulaVolume} onChange={(e) => setFormulaVolume(e.target.value)} unit="ml/day" icon={<Droplet className="w-4 h-4 text-blue-500" />} />
+                </div>
+
+                <div className="pt-4 border-t">
+                    <h3 className="text-lg font-semibold my-3 text-gray-600">Fortification</h3>
+                    <Selector label="Fortifier Type" value={selectedFortifier} onChange={(e) => setSelectedFortifier(e.target.value)} options={fortifierData} icon={<Zap className="w-4 h-4 text-orange-500" />} />
+                    <InputField label="Fortifier Amount" value={fortifierGrams} onChange={(e) => setFortifierGrams(e.target.value)} unit="grams/day" icon={<PlusCircle className="w-4 h-4 text-orange-500" />} />
+                </div>
             </div>
             {nutritionResults ? (
                 Object.entries(guidelineCategories).map(([category, keys]) => (
@@ -177,48 +227,89 @@ const App = () => {
   
   // Centralized State
   const [sex, setSex] = useState('female');
-  const [gestationalAgeAtBirth, setGestationalAgeAtBirth] = useState('32');
+  const [gestationalAgeWeeks, setGestationalAgeWeeks] = useState('32');
+  const [gestationalAgeDays, setGestationalAgeDays] = useState('0');
   const [currentMeasurements, setCurrentMeasurements] = useState({ age: '28', weight: '1800', length: '42', hc: '30' });
   const [previousMeasurements, setPreviousMeasurements] = useState({ age: '7', weight: '1500', length: '39', hc: '28' });
   
-  const [feedVolume, setFeedVolume] = useState('150');
+  const [breastMilkVolume, setBreastMilkVolume] = useState('150');
+  const [selectedBreastMilk, setSelectedBreastMilk] = useState('pretermMilkEarly');
+  const [formulaVolume, setFormulaVolume] = useState('0');
+  const [selectedFormula, setSelectedFormula] = useState('none');
   const [fortifierGrams, setFortifierGrams] = useState('4');
-  const [selectedMilk, setSelectedMilk] = useState('pretermMilkEarly');
   const [selectedFortifier, setSelectedFortifier] = useState('lactodexHMF');
 
   // Calculated Results State
   const [nutritionResults, setNutritionResults] = useState(null);
   const [zScoreResults, setZScoreResults] = useState(null);
   const [weightVelocity, setWeightVelocity] = useState(null);
-  
-  const patientData = { sex, gestationalAgeAtBirth, currentMeasurements, previousMeasurements };
-  const setPatientData = { setSex, setGestationalAgeAtBirth, setCurrentMeasurements, setPreviousMeasurements };
-  const nutritionData = { feedVolume, fortifierGrams, selectedMilk, selectedFortifier };
-  const setNutritionData = { setFeedVolume, setFortifierGrams, setSelectedMilk, setSelectedFortifier };
+  const [targetVelocity, setTargetVelocity] = useState(null);
+  const [fentonData, setFentonData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const patientData = { sex, gestationalAgeWeeks, gestationalAgeDays, currentMeasurements, previousMeasurements };
+  const setPatientData = { setSex, setGestationalAgeWeeks, setGestationalAgeDays, setCurrentMeasurements, setPreviousMeasurements };
+  const nutritionData = { breastMilkVolume, selectedBreastMilk, formulaVolume, selectedFormula, fortifierGrams, selectedFortifier };
+  const setNutritionData = { setBreastMilkVolume, setSelectedBreastMilk, setFormulaVolume, setSelectedFormula, setFortifierGrams, setSelectedFortifier };
+
+  // --- Data Fetching Effect ---
+  useEffect(() => {
+    // IMPORTANT: Replace this URL with the raw URL of your CSV file on GitHub
+    const GITHUB_CSV_URL = 'https://raw.githubusercontent.com/jhchou/peditools/master/data/fenton_2025_lms.csv';
+    
+    fetch(GITHUB_CSV_URL)
+        .then(response => response.text())
+        .then(csvText => {
+            const lines = csvText.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            const data = lines.slice(1).map(line => {
+                const values = line.split(',').map(v => v.trim());
+                let row = {};
+                headers.forEach((header, i) => {
+                    row[header] = values[i];
+                });
+                return row;
+            });
+            setFentonData(data);
+            setLoading(false);
+        })
+        .catch(error => {
+            console.error("Error fetching Fenton data:", error);
+            setLoading(false);
+        });
+  }, []);
 
   // --- Main Calculation Effect ---
   useEffect(() => {
-    const numGestAgeBirth = parseFloat(gestationalAgeAtBirth) || 0;
+    if (!fentonData) return; // Don't calculate until data is loaded
+
+    const numGestAgeWeeks = parseInt(gestationalAgeWeeks, 10) || 0;
+    const numGestAgeDays = parseInt(gestationalAgeDays, 10) || 0;
+    const numGestAgeBirth = numGestAgeWeeks + (numGestAgeDays / 7);
+
     const currentWeightG = parseFloat(currentMeasurements.weight) || 0;
     const previousWeightG = parseFloat(previousMeasurements.weight) || 0;
-    const numFeedVolume = parseFloat(feedVolume) || 0;
+    const numBreastMilkVol = parseFloat(breastMilkVolume) || 0;
+    const numFormulaVol = parseFloat(formulaVolume) || 0;
     const numFortifierGrams = parseFloat(fortifierGrams) || 0;
 
     // --- Nutrition ---
     if (currentWeightG > 0) {
         const currentWeightKg = currentWeightG / 1000;
-        const baseMilkInfo = milkData[selectedMilk];
+        const breastMilkInfo = milkData[selectedBreastMilk];
+        const formulaInfo = formulaData[selectedFormula];
         const fortifierInfo = fortifierData[selectedFortifier];
         const calculatedResults = {};
         Object.keys(esphganGuidelines).forEach(key => {
             const guideline = esphganGuidelines[key];
             let totalIntake = 0;
             if (key === 'fluid') {
-                totalIntake = numFeedVolume;
+                totalIntake = numBreastMilkVol + numFormulaVol;
             } else {
-                const milkValue = baseMilkInfo[key] || 0;
-                const fortifierValue = fortifierInfo[key] || 0;
-                totalIntake = (numFeedVolume * (milkValue / 100)) + (numFortifierGrams * fortifierValue);
+                const fromBreastMilk = (numBreastMilkVol * (breastMilkInfo[key] || 0) / 100);
+                const fromFormula = (numFormulaVol * (formulaInfo[key] || 0) / 100);
+                const fromFortifier = numFortifierGrams * (fortifierInfo[key] || 0);
+                totalIntake = fromBreastMilk + fromFormula + fromFortifier;
             }
             const intakePerKg = totalIntake / currentWeightKg;
             const getStatus = (value, g) => (value < g.min) ? 'low' : (value > g.max) ? 'high' : 'normal';
@@ -232,24 +323,34 @@ const App = () => {
     // --- Growth Velocity ---
     const daysBetween = (parseFloat(currentMeasurements.age) || 0) - (parseFloat(previousMeasurements.age) || 0);
     if (currentWeightG > 0 && previousWeightG > 0 && daysBetween > 0) {
-        const weightDiff = currentWeightG - previousWeightG;
+        const weightDiffG = currentWeightG - previousWeightG;
         const avgWeightKg = ((currentWeightG + previousWeightG) / 2) / 1000;
-        if (avgWeightKg > 0) {
-            const velocity = (weightDiff / avgWeightKg) / daysBetween;
-            setWeightVelocity(velocity.toFixed(1));
-        }
+        const velocityGKgDay = (weightDiffG / avgWeightKg) / daysBetween;
+        setWeightVelocity(velocityGKgDay.toFixed(1));
+
+        const pmaAtPrevious = numGestAgeBirth + ((parseFloat(previousMeasurements.age) || 0) / 7);
+        let targetRange = null;
+        if (pmaAtPrevious >= 22 && pmaAtPrevious < 28) targetRange = velocityTargets["22-27"];
+        else if (pmaAtPrevious >= 28 && pmaAtPrevious < 32) targetRange = velocityTargets["28-31"];
+        else if (pmaAtPrevious >= 32 && pmaAtPrevious < 37) targetRange = velocityTargets["32-36"];
+        else if (pmaAtPrevious >= 37 && pmaAtPrevious < 41) targetRange = velocityTargets["37-40"];
+        else if (pmaAtPrevious >= 41 && pmaAtPrevious < 45) targetRange = velocityTargets["41-44"];
+        else if (pmaAtPrevious >= 45 && pmaAtPrevious <= 50) targetRange = velocityTargets["45-49"];
+        setTargetVelocity(targetRange ? targetRange[sex] : null);
+
     } else {
         setWeightVelocity(null);
+        setTargetVelocity(null);
     }
 
     // --- Z-Scores ---
     const calculateAllZScores = (measurements) => {
         const postNatalWeeks = (parseFloat(measurements.age) || 0) / 7;
-        const correctedGestAge = numGestAgeBirth + postNatalWeeks;
-        if (correctedGestAge < 22 || correctedGestAge > 50) return { weight: null, length: null, hc: null };
-        const weightZ = calculateZScore(sex, 'weight', correctedGestAge, parseFloat(measurements.weight));
-        const lengthZ = calculateZScore(sex, 'length', correctedGestAge, parseFloat(measurements.length));
-        const hcZ = calculateZScore(sex, 'hc', correctedGestAge, parseFloat(measurements.hc));
+        const pma = numGestAgeBirth + postNatalWeeks;
+        if (pma < 22 || pma > 50) return { weight: null, length: null, hc: null };
+        const weightZ = calculateZScore(sex, 'weight', pma, parseFloat(measurements.weight), fentonData);
+        const lengthZ = calculateZScore(sex, 'length', pma, parseFloat(measurements.length), fentonData);
+        const hcZ = calculateZScore(sex, 'head_circ', pma, parseFloat(measurements.hc), fentonData);
         return { weight: weightZ, length: lengthZ, hc: hcZ };
     };
     const currentZ = calculateAllZScores(currentMeasurements);
@@ -262,7 +363,7 @@ const App = () => {
         hc: { current: formatZ(currentZ.hc), previous: formatZ(previousZ.hc), change: calcChange(currentZ.hc, previousZ.hc) },
     });
 
-  }, [sex, gestationalAgeAtBirth, currentMeasurements, previousMeasurements, feedVolume, fortifierGrams, selectedMilk, selectedFortifier]);
+  }, [sex, gestationalAgeWeeks, gestationalAgeDays, currentMeasurements, previousMeasurements, breastMilkVolume, selectedBreastMilk, formulaVolume, selectedFormula, fortifierGrams, selectedFortifier, fentonData]);
 
   const TabButton = ({ id, label, icon }) => {
     const isActive = activeTab === id;
@@ -277,6 +378,17 @@ const App = () => {
         </button>
     );
   };
+
+  if (loading) {
+    return (
+        <div className="flex justify-center items-center h-screen bg-slate-50">
+            <div className="text-center">
+                <Loader className="animate-spin text-blue-600 h-12 w-12 mx-auto" />
+                <p className="mt-4 text-gray-500">Loading Clinical Data...</p>
+            </div>
+        </div>
+    )
+  }
 
   return (
     <div className="bg-slate-50 min-h-screen font-sans text-gray-800">
@@ -294,7 +406,7 @@ const App = () => {
 
         <main>
             {activeTab === 'patientData' && <PatientDataView patientData={patientData} setPatientData={setPatientData} />}
-            {activeTab === 'growth' && <GrowthView zScoreResults={zScoreResults} weightVelocity={weightVelocity} />}
+            {activeTab === 'growth' && <GrowthView zScoreResults={zScoreResults} weightVelocity={weightVelocity} targetVelocity={targetVelocity} />}
             {activeTab === 'nutrition' && <NutritionView nutritionData={nutritionData} setNutritionData={setNutritionData} nutritionResults={nutritionResults} />}
         </main>
 
@@ -306,10 +418,10 @@ const App = () => {
                  <h3 className="text-md font-bold text-gray-700 mb-2">References</h3>
                  <ul className="text-left text-xs space-y-2">
                      <li>
-                        1. <a href="https://pubmed.ncbi.nlm.nih.gov/36705703/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ESPGHAN/ESPEN/ESPR/CSPEN guidelines on pediatric parenteral nutrition: Neonates.</a> Embleton, N. D., et al. (2023). *Clinical Nutrition*, 42(9), 1583-1602.
+                        1. <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/ppe.70035" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Fenton, T. R., Elmrayed, S., & Alshaikh, B. N. (2025). The 2025 Fenton Preterm Growth Standard. *Paediatric and Perinatal Epidemiology*, 1–13.</a>
                      </li>
                      <li>
-                        2. <a href="https://bmcpediatr.biomedcentral.com/articles/10.1186/1471-2431-13-59" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">A systematic review and meta-analysis to revise the Fenton growth chart for preterm infants.</a> Fenton, T. R., & Kim, J. H. (2013). *BMC pediatrics*, 13(1), 1-13.
+                        2. <a href="https://pubmed.ncbi.nlm.nih.gov/36705703/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Embleton, N. D., et al. (2023). Enteral Nutrition in Preterm Infants (2022): A Position Paper From the ESPGHAN Committee on Nutrition and Invited Experts. *Journal of Pediatric Gastroenterology and Nutrition*, 76(2), 248-268.</a>
                      </li>
                  </ul>
             </div>
@@ -385,13 +497,20 @@ const ZScoreResultCard = ({ title, current, previous, change }) => {
     );
 };
 
-const VelocityCard = ({ value }) => (
+const VelocityCard = ({ value, targets }) => (
   <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-lg shadow-md border border-blue-200 text-center">
     <h3 className="text-lg font-semibold text-blue-800 flex items-center justify-center"><TrendingUp className="w-6 h-6 mr-2" />Weight Gain Velocity</h3>
-    <p className="text-5xl font-bold text-blue-600 my-3">{value}</p>
-    <p className="text-sm text-blue-700">g / kg / day</p>
-    <p className="text-xs text-blue-500 mt-2">Recommended: 15-20 g/kg/day</p>
+    <p className="text-5xl font-bold text-blue-600 my-3">{value} <span className="text-2xl font-medium">g/kg/day</span></p>
+    {targets && <div className="text-xs text-blue-600 border-t border-blue-200 pt-3">
+        <p className="font-semibold mb-1">Target Velocity (g/kg/day) for Post-Menstrual Age (Fenton 2025):</p>
+        <div className="flex justify-around">
+            <div><span className="font-bold">{targets.p3}</span><br/>3rd</div>
+            <div><span className="font-bold">{targets.p50}</span><br/>50th</div>
+            <div><span className="font-bold">{targets.p97}</span><br/>97th</div>
+        </div>
+    </div>}
   </div>
 );
 
 export default App;
+
