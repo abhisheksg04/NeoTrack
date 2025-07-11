@@ -513,4 +513,3 @@ const VelocityCard = ({ value, targets }) => (
 );
 
 export default App;
-
