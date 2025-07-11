@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ShieldCheck, TrendingUp, AlertTriangle, Droplet, Weight, PlusCircle, Calendar, ChevronDown, ChevronUp, Zap, Ruler, PersonStanding, Activity, Baby, Loader } from 'lucide-react';
 
 // --- DATA (Milk, Fortifier, ESPGHAN) ---
-// Fenton data is now fetched from the /public folder.
+// This section contains the nutritional data for various milk types, formulas, and fortifiers,
+// as well as the ESPGHAN guidelines for preterm infant nutrition.
+
 const milkData = {
   pretermMilkEarly: { name: "Preterm Milk (Early)", energy: 69.5, protein: 1.6, fat: 4.0, carbs: 7.0, linoleicAcid: 700, alphaLinolenicAcid: 85, dha: 12.5, ara: 20, epa: 2.5, sodium: 22.5, potassium: 62.5, chloride: 45, calcium: 30, phosphorus: 14, magnesium: 3.5, iron: 0.065, zinc: 0.45, copper: 40, selenium: 1.75, manganese: 3.5, iodine: 12.5, vitaminA: 225, vitaminD: 2.5, vitaminE: 0.35, vitaminK: 2, vitaminC: 4, thiamine: 17.5, riboflavin: 35, niacin: 0.175, vitaminB6: 15, folicAcid: 7.5, vitaminB12: 0.04, pantothenicAcid: 0.25, biotin: 0.75 },
   pretermMilkMature: { name: "Preterm Milk (Mature)", energy: 69.5, protein: 1.1, fat: 4.0, carbs: 7.0, linoleicAcid: 700, alphaLinolenicAcid: 85, dha: 12.5, ara: 20, epa: 2.5, sodium: 22.5, potassium: 62.5, chloride: 45, calcium: 30, phosphorus: 14, magnesium: 3.5, iron: 0.065, zinc: 0.3, copper: 40, selenium: 1.75, manganese: 3.5, iodine: 12.5, vitaminA: 225, vitaminD: 2.5, vitaminE: 0.35, vitaminK: 2, vitaminC: 4, thiamine: 17.5, riboflavin: 35, niacin: 0.175, vitaminB6: 15, folicAcid: 7.5, vitaminB12: 0.04, pantothenicAcid: 0.25, biotin: 0.75 },
@@ -37,7 +39,29 @@ const velocityTargets = {
     "45-49": { "male": { "p3": 6.1, "p50": 6.0, "p97": 5.9 }, "female": { "p3": 5.6, "p50": 5.4, "p97": 5.2 } },
 };
 
-// --- Z-Score Calculation Logic ---
+// --- FENTON 2025 LMS DATA ---
+// NOTE: The external fetch for this data was failing. The data is now embedded directly
+// into the app to prevent network errors. This is a placeholder with sample data.
+// For full accuracy, this should be replaced with the complete fenton_2025_lms.csv dataset.
+const fentonData = [
+    { gender: 'f', measure: 'weight', age: '22', l: '1.484', m: '510.8', s: '0.1287' },
+    { gender: 'f', measure: 'weight', age: '23', l: '1.484', m: '582.3', s: '0.1287' },
+    { gender: 'f', measure: 'length', age: '22', l: '1', m: '28.1', s: '0.0763' },
+    { gender: 'f', measure: 'length', age: '23', l: '1', m: '29.2', s: '0.0763' },
+    { gender: 'f', measure: 'head_circ', age: '22', l: '1', m: '19.1', s: '0.075' },
+    { gender: 'f', measure: 'head_circ', age: '23', l: '1', m: '20.1', s: '0.075' },
+    { gender: 'm', measure: 'weight', age: '22', l: '1.484', m: '515.2', s: '0.1287' },
+    { gender: 'm', measure: 'weight', age: '23', l: '1.484', m: '592.1', s: '0.1287' },
+    { gender: 'm', measure: 'length', age: '22', l: '1', m: '28.2', s: '0.0763' },
+    { gender: 'm', measure: 'length', age: '23', l: '1', m: '29.3', s: '0.0763' },
+    { gender: 'm', measure: 'head_circ', age: '22', l: '1', m: '19.2', s: '0.075' },
+    { gender: 'm', measure: 'head_circ', age: '23', l: '1', m: '20.2', s: '0.075' },
+    // ... Add the rest of the fenton_2025_lms.csv data here
+];
+
+
+// --- Z-Score Calculation Logic (NO LONGER USED FOR NEW REQUIREMENTS) ---
+// Kept for reference but the Z-score calculation itself will not be called for display.
 const getLMS = (sex, measurement, gestWeek, fentonData) => {
     if (!fentonData) return null;
     const genderKey = sex === 'male' ? 'm' : 'f';
@@ -82,6 +106,8 @@ const calculateZScore = (sex, measurement, gestWeek, value, fentonData) => {
 };
 
 // --- HELPER & UI COMPONENTS ---
+// Reusable components for building the user interface, such as input fields, selectors, and accordions.
+
 const InputField = ({ label, value, onChange, unit, icon, placeholder, min, max }) => (
   <div className="w-full">
     <label className="text-sm font-medium text-gray-600 flex items-center mb-1">{icon}<span className="ml-2">{label}</span></label>
@@ -114,7 +140,9 @@ const Accordion = ({ title, children, defaultOpen = true }) => {
     );
 };
 
+
 // --- VIEW COMPONENTS ---
+// These components define the different sections (tabs) of the application UI.
 
 const PatientDataView = ({ patientData, setPatientData }) => {
     const { sex, gestationalAgeWeeks, gestationalAgeDays, currentMeasurements, previousMeasurements } = patientData;
@@ -158,17 +186,15 @@ const PatientDataView = ({ patientData, setPatientData }) => {
     );
 };
 
-const GrowthView = ({ zScoreResults, weightVelocity, targetVelocity }) => (
+// Updated GrowthView to display gain per week instead of Z-scores
+const GrowthView = ({ weightVelocity, targetVelocity, lengthGainPerWeek, hcGainPerWeek }) => (
     <div className="space-y-8">
-        {weightVelocity ? (<VelocityCard value={weightVelocity} targets={targetVelocity} />) : (<div className="text-center py-10 bg-white rounded-lg shadow-sm border"><p className="text-gray-500">Enter valid measurements for velocity.</p></div>)}
-        {zScoreResults ? (
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 h-fit space-y-4">
-                <h2 className="text-2xl font-bold text-gray-700">Anthropometry & Z-Scores (Fenton 2025)</h2>
-                <ZScoreResultCard title="Weight Z-Score" {...zScoreResults.weight} />
-                <ZScoreResultCard title="Length Z-Score" {...zScoreResults.length} />
-                <ZScoreResultCard title="Head Circ. Z-Score" {...zScoreResults.hc} />
-            </div>
-        ) : (<div className="text-center py-10 bg-white rounded-lg shadow-sm border"><p className="text-gray-500">Enter measurements for Z-Scores.</p></div>)}
+        {weightVelocity ? (<VelocityCard value={weightVelocity} targets={targetVelocity} />) : (<div className="text-center py-10 bg-white rounded-lg shadow-sm border"><p className="text-gray-500">Enter valid measurements for weight velocity.</p></div>)}
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 h-fit space-y-4">
+            <h2 className="text-2xl font-bold text-gray-700">Growth Gains</h2>
+            <MeasurementGainCard title="Length Gain" value={lengthGainPerWeek} unit="cm/week" />
+            <MeasurementGainCard title="Head Circumference Gain" value={hcGainPerWeek} unit="cm/week" />
+        </div>
     </div>
 );
 
@@ -221,11 +247,15 @@ const NutritionView = ({ nutritionData, setNutritionData, nutritionResults }) =>
     );
 };
 
+
 // --- MAIN APP COMPONENT ---
+// This is the root component of the application. It manages the overall state,
+// fetches necessary data, performs all calculations, and renders the main layout.
+
 const App = () => {
   const [activeTab, setActiveTab] = useState('patientData');
   
-  // Centralized State
+  // Centralized State for user inputs
   const [sex, setSex] = useState('female');
   const [gestationalAgeWeeks, setGestationalAgeWeeks] = useState('32');
   const [gestationalAgeDays, setGestationalAgeDays] = useState('0');
@@ -239,50 +269,25 @@ const App = () => {
   const [fortifierGrams, setFortifierGrams] = useState('4');
   const [selectedFortifier, setSelectedFortifier] = useState('lactodexHMF');
 
-  // Calculated Results State
+  // State for calculated results
   const [nutritionResults, setNutritionResults] = useState(null);
-  const [zScoreResults, setZScoreResults] = useState(null);
+  // Removed zScoreResults state
   const [weightVelocity, setWeightVelocity] = useState(null);
   const [targetVelocity, setTargetVelocity] = useState(null);
-  const [fentonData, setFentonData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [lengthGainPerWeek, setLengthGainPerWeek] = useState(null); // New state for length gain
+  const [hcGainPerWeek, setHcGainPerWeek] = useState(null); // New state for head circumference gain
 
+
+  // Bundling state and setters for easier prop passing
   const patientData = { sex, gestationalAgeWeeks, gestationalAgeDays, currentMeasurements, previousMeasurements };
   const setPatientData = { setSex, setGestationalAgeWeeks, setGestationalAgeDays, setCurrentMeasurements, setPreviousMeasurements };
   const nutritionData = { breastMilkVolume, selectedBreastMilk, formulaVolume, selectedFormula, fortifierGrams, selectedFortifier };
   const setNutritionData = { setBreastMilkVolume, setSelectedBreastMilk, setFormulaVolume, setSelectedFormula, setFortifierGrams, setSelectedFortifier };
 
-  // --- Data Fetching Effect ---
-  useEffect(() => {
-    // IMPORTANT: Replace this URL with the raw URL of your CSV file on GitHub
-    const GITHUB_CSV_URL = 'https://raw.githubusercontent.com/jhchou/peditools/master/data/fenton_2025_lms.csv';
-    
-    fetch(GITHUB_CSV_URL)
-        .then(response => response.text())
-        .then(csvText => {
-            const lines = csvText.trim().split('\n');
-            const headers = lines[0].split(',').map(h => h.trim());
-            const data = lines.slice(1).map(line => {
-                const values = line.split(',').map(v => v.trim());
-                let row = {};
-                headers.forEach((header, i) => {
-                    row[header] = values[i];
-                });
-                return row;
-            });
-            setFentonData(data);
-            setLoading(false);
-        })
-        .catch(error => {
-            console.error("Error fetching Fenton data:", error);
-            setLoading(false);
-        });
-  }, []);
-
   // --- Main Calculation Effect ---
+  // This effect runs whenever any input data changes. It recalculates nutrition,
+  // growth velocity, and the new length and HC gains.
   useEffect(() => {
-    if (!fentonData) return; // Don't calculate until data is loaded
-
     const numGestAgeWeeks = parseInt(gestationalAgeWeeks, 10) || 0;
     const numGestAgeDays = parseInt(gestationalAgeDays, 10) || 0;
     const numGestAgeBirth = numGestAgeWeeks + (numGestAgeDays / 7);
@@ -293,7 +298,7 @@ const App = () => {
     const numFormulaVol = parseFloat(formulaVolume) || 0;
     const numFortifierGrams = parseFloat(fortifierGrams) || 0;
 
-    // --- Nutrition ---
+    // --- Nutrition Calculation ---
     if (currentWeightG > 0) {
         const currentWeightKg = currentWeightG / 1000;
         const breastMilkInfo = milkData[selectedBreastMilk];
@@ -320,7 +325,7 @@ const App = () => {
         setNutritionResults(null);
     }
 
-    // --- Growth Velocity ---
+    // --- Growth Velocity Calculation (Weight) ---
     const daysBetween = (parseFloat(currentMeasurements.age) || 0) - (parseFloat(previousMeasurements.age) || 0);
     if (currentWeightG > 0 && previousWeightG > 0 && daysBetween > 0) {
         const weightDiffG = currentWeightG - previousWeightG;
@@ -343,27 +348,34 @@ const App = () => {
         setTargetVelocity(null);
     }
 
-    // --- Z-Scores ---
-    const calculateAllZScores = (measurements) => {
-        const postNatalWeeks = (parseFloat(measurements.age) || 0) / 7;
-        const pma = numGestAgeBirth + postNatalWeeks;
-        if (pma < 22 || pma > 50) return { weight: null, length: null, hc: null };
-        const weightZ = calculateZScore(sex, 'weight', pma, parseFloat(measurements.weight), fentonData);
-        const lengthZ = calculateZScore(sex, 'length', pma, parseFloat(measurements.length), fentonData);
-        const hcZ = calculateZScore(sex, 'head_circ', pma, parseFloat(measurements.hc), fentonData);
-        return { weight: weightZ, length: lengthZ, hc: hcZ };
-    };
-    const currentZ = calculateAllZScores(currentMeasurements);
-    const previousZ = calculateAllZScores(previousMeasurements);
-    const formatZ = (z) => z !== null ? z.toFixed(2) : null;
-    const calcChange = (current, prev) => (current !== null && prev !== null) ? (current - prev).toFixed(2) : null;
-    setZScoreResults({
-        weight: { current: formatZ(currentZ.weight), previous: formatZ(previousZ.weight), change: calcChange(currentZ.weight, previousZ.weight) },
-        length: { current: formatZ(currentZ.length), previous: formatZ(previousZ.length), change: calcChange(currentZ.length, previousZ.length) },
-        hc: { current: formatZ(currentZ.hc), previous: formatZ(previousZ.hc), change: calcChange(currentZ.hc, previousZ.hc) },
-    });
+    // --- Length and Head Circumference Gain Calculation ---
+    const currentLength = parseFloat(currentMeasurements.length) || 0;
+    const previousLength = parseFloat(previousMeasurements.length) || 0;
+    const currentHc = parseFloat(currentMeasurements.hc) || 0;
+    const previousHc = parseFloat(previousMeasurements.hc) || 0;
 
-  }, [sex, gestationalAgeWeeks, gestationalAgeDays, currentMeasurements, previousMeasurements, breastMilkVolume, selectedBreastMilk, formulaVolume, selectedFormula, fortifierGrams, selectedFortifier, fentonData]);
+    if (currentLength > 0 && previousLength > 0 && daysBetween > 0) {
+        const lengthDiff = currentLength - previousLength;
+        const weeksBetween = daysBetween / 7;
+        const gainPerWeek = lengthDiff / weeksBetween;
+        setLengthGainPerWeek(gainPerWeek.toFixed(1));
+    } else {
+        setLengthGainPerWeek(null);
+    }
+
+    if (currentHc > 0 && previousHc > 0 && daysBetween > 0) {
+        const hcDiff = currentHc - previousHc;
+        const weeksBetween = daysBetween / 7;
+        const gainPerWeek = hcDiff / weeksBetween;
+        setHcGainPerWeek(gainPerWeek.toFixed(1));
+    } else {
+        setHcGainPerWeek(null);
+    }
+
+    // Removed Z-score calculation from here
+    // setZScoreResults(null); 
+
+  }, [sex, gestationalAgeWeeks, gestationalAgeDays, currentMeasurements, previousMeasurements, breastMilkVolume, selectedBreastMilk, formulaVolume, selectedFormula, fortifierGrams, selectedFortifier]);
 
   const TabButton = ({ id, label, icon }) => {
     const isActive = activeTab === id;
@@ -379,17 +391,6 @@ const App = () => {
     );
   };
 
-  if (loading) {
-    return (
-        <div className="flex justify-center items-center h-screen bg-slate-50">
-            <div className="text-center">
-                <Loader className="animate-spin text-blue-600 h-12 w-12 mx-auto" />
-                <p className="mt-4 text-gray-500">Loading Clinical Data...</p>
-            </div>
-        </div>
-    )
-  }
-
   return (
     <div className="bg-slate-50 min-h-screen font-sans text-gray-800">
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -400,13 +401,13 @@ const App = () => {
 
         <div className="sticky top-4 z-10 bg-slate-50/80 backdrop-blur-lg p-2 rounded-xl border shadow-sm mb-8 flex flex-wrap items-center justify-center gap-2">
             <TabButton id="patientData" label="Patient Data" icon={<Baby size={20} />} />
-            <TabButton id="growth" label="Growth & Z-Scores" icon={<TrendingUp size={20} />} />
+            <TabButton id="growth" label="Growth & Gains" icon={<TrendingUp size={20} />} /> {/* Updated label */}
             <TabButton id="nutrition" label="Enteral Nutrition" icon={<Activity size={20} />} />
         </div>
 
         <main>
             {activeTab === 'patientData' && <PatientDataView patientData={patientData} setPatientData={setPatientData} />}
-            {activeTab === 'growth' && <GrowthView zScoreResults={zScoreResults} weightVelocity={weightVelocity} targetVelocity={targetVelocity} />}
+            {activeTab === 'growth' && <GrowthView weightVelocity={weightVelocity} targetVelocity={targetVelocity} lengthGainPerWeek={lengthGainPerWeek} hcGainPerWeek={hcGainPerWeek} />}
             {activeTab === 'nutrition' && <NutritionView nutritionData={nutritionData} setNutritionData={setNutritionData} nutritionResults={nutritionResults} />}
         </main>
 
@@ -418,10 +419,10 @@ const App = () => {
                  <h3 className="text-md font-bold text-gray-700 mb-2">References</h3>
                  <ul className="text-left text-xs space-y-2">
                      <li>
-                        1. <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/ppe.70035" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Fenton, T. R., Elmrayed, S., & Alshaikh, B. N. (2025). The 2025 Fenton Preterm Growth Standard. *Paediatric and Perinatal Epidemiology*, 1–13.</a>
+                         1. <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/ppe.70035" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Fenton, T. R., Elmrayed, S., & Alshaikh, B. N. (2025). The 2025 Fenton Preterm Growth Standard. *Paediatric and Perinatal Epidemiology*, 1–13.</a>
                      </li>
                      <li>
-                        2. <a href="https://pubmed.ncbi.nlm.nih.gov/36705703/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Embleton, N. D., et al. (2023). Enteral Nutrition in Preterm Infants (2022): A Position Paper From the ESPGHAN Committee on Nutrition and Invited Experts. *Journal of Pediatric Gastroenterology and Nutrition*, 76(2), 248-268.</a>
+                         2. <a href="https://pubmed.ncbi.nlm.nih.gov/36705703/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Embleton, N. D., et al. (2023). Enteral Nutrition in Preterm Infants (2022): A Position Paper From the ESPGHAN Committee on Nutrition and Invited Experts. *Journal of Pediatric Gastroenterology and Nutrition*, 76(2), 248-268.</a>
                      </li>
                  </ul>
             </div>
@@ -437,6 +438,8 @@ const App = () => {
 
 
 // --- UI HELPER COMPONENTS ---
+// These components are used to display the calculated results in a visually appealing way.
+
 const ResultCard = ({ title, value, unit, guideline, status }) => {
   const getStatusColor = () => {
     switch (status) {
@@ -469,33 +472,18 @@ const ResultCard = ({ title, value, unit, guideline, status }) => {
   );
 };
 
-const ZScoreResultCard = ({ title, current, previous, change }) => {
-    const getChangeColor = (val) => {
-        if (val === null || val === undefined) return 'text-gray-500';
-        if (val < -0.5) return 'text-red-500';
-        if (val > 0.5) return 'text-green-500';
-        return 'text-gray-700';
-    }
+// New component for displaying measurement gains
+const MeasurementGainCard = ({ title, value, unit }) => {
     return (
         <div className="bg-white p-4 rounded-lg shadow-sm border text-center">
             <p className="text-md font-semibold text-gray-700 mb-2">{title}</p>
-            <div className="grid grid-cols-3 gap-2 items-center">
-                <div>
-                    <p className="text-xs text-gray-400">Previous</p>
-                    <p className="text-xl font-bold text-gray-600">{previous ?? 'N/A'}</p>
-                </div>
-                <div>
-                    <p className="text-xs text-gray-400">Current</p>
-                    <p className="text-2xl font-bold text-blue-600">{current ?? 'N/A'}</p>
-                </div>
-                <div>
-                    <p className="text-xs text-gray-400">Change (ΔZ)</p>
-                    <p className={`text-xl font-bold ${getChangeColor(change)}`}>{change ?? 'N/A'}</p>
-                </div>
-            </div>
+            <p className="text-2xl font-bold text-blue-600">
+                {value !== null ? `${value}` : 'N/A'} <span className="text-lg font-medium">{unit}</span>
+            </p>
         </div>
     );
 };
+
 
 const VelocityCard = ({ value, targets }) => (
   <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-lg shadow-md border border-blue-200 text-center">
